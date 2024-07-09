@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spanish Quiz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .quiz-container {
+            background-color: #f0f0f0;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+        #result {
+            display: none;
+        }
+        button {
+            margin: 10px;
+            padding: 5px 10px;
+        }
+        .correct {
+            color: green;
+            font-weight: bold;
+        }
+        .incorrect {
+            color: red;
+            font-weight: bold;
+        }
+        #countdown {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to the Spanish Quiz!</h1>
+    <div id="start">
+        <p>Do you want to play?</p>
+        <button onclick="startQuiz()">Yes</button>
+        <button onclick="endGame()">No</button>
+    </div>
+
+    <div class="quiz-container" id="quiz">
+        <p id="question"></p>
+        <input type="text" id="answer">
+        <button onclick="checkAnswer()">Submit</button>
+        <p id="hint"></p>
+        <p id="timer">Time Left: <span id="countdown"></span></p>
+    </div>
+
+    <div class="quiz-container" id="result">
+        <p id="score"></p>
+        <p id="percentage"></p>
+        <button onclick="saveScore()">Save Score</button>
+        <button onclick="location.reload()">Play Again</button>
+        <div id="leaderboard">
+            <h2>Leaderboard</h2>
+            <ol id="leaderboardList"></ol>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            { question: "How do you say 'Hello' in Spanish?", answer: "hola", hint: "It's a common greeting." },
+            { question: "How do you say 'Thank you' in Spanish?", answer: "gracias", hint: "Expresses gratitude." },
+            { question: "How do you say 'Please' in Spanish?", answer: "por favor", hint: "Used when requesting something." },
+            { question: "How do you say 'Goodbye' in Spanish?", answer: "adios", hint: "Said when leaving." },
+            { question: "How do you say 'Yes' in Spanish?", answer: "si", hint: "Affirmative response." },
+            { question: "How do you say 'No' in Spanish?", answer: "no", hint: "Negative response." },
+            { question: "How do you say 'Excuse me' in Spanish?", answer: "perdon", hint: "Used to apologize or get attention." },
+            { question: "How do you say 'Good morning' in Spanish?", answer: "buenos dias", hint: "Greeting used in the morning." },
+            { question: "How do you say 'Good night' in Spanish?", answer: "buenas noches", hint: "Greeting used at night." },
+            { question: "How do you say 'My name is' in Spanish?", answer: "me llamo", hint: "Used to introduce oneself." }
+        ];
+
+        const numQuestions = questions.length; // Number of questions to ask per quiz
+        const timerSeconds = 30; // Countdown timer in seconds per question
+
+        let currentQuestion = 0;
+        let score = 0;
+        let countdown = timerSeconds;
+        let timerInterval;
+        let leaderboard = [];
+
+        function startQuiz() {
+            const playerName = prompt("Please enter your name:");
+            if (!playerName) {
+                alert("Please enter a valid name to start the quiz.");
+                return;
+            }
+
+            document.getElementById('start').style.display = 'none';
+            document.getElementById('quiz').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+
+            // Shuffle questions array
+            shuffleArray(questions);
+
+            currentQuestion = 0;
+            score = 0;
+            leaderboard = []; // Reset leaderboard
+            askQuestion();
+            startTimer();
+        }
+
+        function askQuestion() {
+            if (currentQuestion < numQuestions) {
+                const current = questions[currentQuestion];
+                document.getElementById('question').textContent = current.question;
+                document.getElementById('hint').textContent = `Hint: ${current.hint}`;
+                document.getElementById('answer').value = ""; // Clear previous answer
+                resetTimer();
+            } else {
+                showResult();
+            }
+        }
+
+        function checkAnswer() {
+            const userAnswer = document.getElementById('answer').value.toLowerCase();
+            const correctAnswer = questions[currentQuestion].answer.toLowerCase();
+
+            if (userAnswer === correctAnswer) {
+                score++;
+            }
+
+            currentQuestion++;
+            askQuestion();
+        }
+
+        function showResult() {
+            document.getElementById('quiz').style.display = 'none';
+            document.getElementById('result').style.display = 'block';
+
+            const percentage = (score / numQuestions) * 100;
+
+            document.getElementById('score').textContent = `Your score: ${score} out of ${numQuestions}`;
+            document.getElementById('percentage').textContent = `Percentage: ${percentage.toFixed(2)}%`;
+
+            // Prompt for player name to add to leaderboard
+            const playerName = prompt("Congratulations! You made it to the leaderboard. Enter your name:");
+            if (!playerName) {
+                alert("Please enter a valid name to add your score to the leaderboard.");
+                return;
+            }
+
+            addToLeaderboard(playerName, score);
+
+            // Display leaderboard
+            displayLeaderboard();
+        }
+
+        function addToLeaderboard(name, score) {
+            leaderboard.push({ name, score });
+            // Sort leaderboard descending by score
+            leaderboard.sort((a, b) => b.score - a.score);
+        }
+
+        function displayLeaderboard() {
+            const leaderboardList = document.getElementById('leaderboardList');
+            leaderboardList.innerHTML = ''; // Clear previous entries
+
+            leaderboard.forEach((entry, index) => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `#${index + 1}: ${entry.name} - ${entry.score}`;
+                leaderboardList.appendChild(listItem);
+            });
+        }
+
+        function startTimer() {
+            countdown = timerSeconds;
+            updateTimerDisplay();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            countdown--;
+            updateTimerDisplay();
+
+            if (countdown === 0) {
+                clearInterval(timerInterval);
+                currentQuestion++;
+                askQuestion();
+            }
+        }
+
+        function updateTimerDisplay() {
+            document.getElementById('countdown').textContent = countdown;
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            startTimer();
+        }
+
+        // Function to shuffle an array using Fisher-Yates shuffle algorithm
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function saveScore() {
+            const playerName = prompt("Enter your name to save your score:");
+            if (!playerName) {
+                alert("Please enter a valid name to save your score.");
+                return;
+            }
+
+            addToLeaderboard(playerName, score);
+            displayLeaderboard();
+        }
+
+        function endGame() {
+            // Handle when the user decides not to start the quiz
+        }
+    </script>
+</body>
+</html>
